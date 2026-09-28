@@ -1,0 +1,35 @@
+{
+    "name": "Mano",
+    "short_name": "Mano",
+    "start_url": ".",
+    "display": "standalone",
+    "background_color": "#1B7F5A",
+    "theme_color": "#1B7F5A",
+    "description": "Gestion de stock, ventes et clients pour petits commerçants",
+    "orientation": "portrait-primary",
+    "prefer_related_applications": false,
+    "icons": [
+        {
+            "src": "icons/Icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "icons/Icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        },
+        {
+            "src": "icons/Icon-maskable-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "maskable"
+        },
+        {
+            "src": "icons/Icon-maskable-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable"
+        }
+    ]
+}
