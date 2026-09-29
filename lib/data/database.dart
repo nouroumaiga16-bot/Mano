@@ -4,6 +4,7 @@ import 'package:drift_flutter/drift_flutter.dart';
 import 'package:uuid/uuid.dart';
 
 part 'database.g.dart';
+part 'sales_queries.dart';
 
 const _uuid = Uuid();
 
@@ -33,7 +34,7 @@ class Products extends Table {
   Set<Column> get primaryKey => {id};
 }
 
-enum MovementReason { initial, restock, correction, sale }
+enum MovementReason { initial, restock, correction, sale, saleCancelled }
 
 /// Historique de chaque entrée ou sortie de stock (le « cahier » du produit).
 @DataClassName('StockMovement')
@@ -45,10 +46,72 @@ class StockMovements extends Table {
   IntColumn get change => integer()();
   TextColumn get reason => textEnum<MovementReason>()();
   TextColumn get note => text().nullable()();
+
+  /// Vente à l'origine du mouvement (ventes et annulations seulement).
+  TextColumn get saleId => text().nullable().references(Sales, #id)();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 
   @override
   Set<Column> get primaryKey => {id};
+}
+
+enum PaymentMethod { cash, orangeMoney, moovMoney, wave }
+
+/// Une vente, qui sert aussi de facture.
+@DataClassName('Sale')
+class Sales extends Table {
+  TextColumn get id => text().clientDefault(() => _uuid.v4())();
+
+  /// Numéro de facture lisible : 1, 2, 3... (affiché « N° 0001 »).
+  IntColumn get number => integer()();
+  TextColumn get customerName => text().nullable()();
+  TextColumn get customerPhone => text().nullable()();
+
+  /// Somme des lignes, avant remise.
+  IntColumn get subtotal => integer()();
+
+  /// Remise sur le total, en FCFA.
+  IntColumn get discount => integer().withDefault(const Constant(0))();
+  IntColumn get total => integer()();
+  TextColumn get paymentMethod => textEnum<PaymentMethod>()();
+
+  /// Égal au total pour l'instant ; servira aux ventes à crédit (étape 3).
+  IntColumn get amountPaid => integer()();
+
+  /// Une vente annulée remet les articles en stock mais reste visible.
+  BoolColumn get cancelled => boolean().withDefault(const Constant(false))();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// Une ligne de facture. Le nom et les prix sont recopiés au moment de la
+/// vente : la facture ne change pas si le produit est modifié plus tard.
+@DataClassName('SaleItem')
+class SaleItems extends Table {
+  TextColumn get id => text().clientDefault(() => _uuid.v4())();
+  TextColumn get saleId => text().references(Sales, #id)();
+  TextColumn get productId => text().references(Products, #id)();
+  TextColumn get productName => text()();
+  IntColumn get quantity => integer()();
+  IntColumn get unitPrice => integer()();
+
+  /// Prix d'achat au moment de la vente, pour calculer le bénéfice.
+  IntColumn get purchasePrice => integer()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// Réglages simples (nom de la boutique, téléphone...), sous forme clé/valeur.
+class Settings extends Table {
+  TextColumn get key => text()();
+  TextColumn get value => text()();
+
+  @override
+  Set<Column> get primaryKey => {key};
 }
 
 extension ProductStock on Product {
@@ -71,12 +134,27 @@ class StockSummary {
   final int stockValue;
 }
 
-@DriftDatabase(tables: [Products, StockMovements])
+@DriftDatabase(tables: [Products, StockMovements, Sales, SaleItems, Settings])
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+    onUpgrade: (m, from, to) async {
+      if (from < 2) {
+        await m.createTable(sales);
+        await m.createTable(saleItems);
+        await m.createTable(settings);
+        await m.addColumn(stockMovements, stockMovements.saleId);
+      }
+    },
+    beforeOpen: (details) async {
+      await customStatement('PRAGMA foreign_keys = ON');
+    },
+  );
 
   static QueryExecutor _openConnection() {
     return driftDatabase(
@@ -225,8 +303,9 @@ class AppDatabase extends _$AppDatabase {
     String id,
     int delta,
     MovementReason reason,
-    String? note,
-  ) {
+    String? note, {
+    String? saleId,
+  }) {
     return transaction(() async {
       await (update(products)..where((p) => p.id.equals(id))).write(
         ProductsCompanion.custom(
@@ -234,7 +313,7 @@ class AppDatabase extends _$AppDatabase {
           updatedAt: Constant(DateTime.now()),
         ),
       );
-      await _recordMovement(id, delta, reason, note: note);
+      await _recordMovement(id, delta, reason, note: note, saleId: saleId);
     });
   }
 
@@ -243,6 +322,7 @@ class AppDatabase extends _$AppDatabase {
     int change,
     MovementReason reason, {
     String? note,
+    String? saleId,
   }) async {
     final trimmed = note?.trim();
     await into(stockMovements).insert(
@@ -251,6 +331,7 @@ class AppDatabase extends _$AppDatabase {
         change: change,
         reason: reason,
         note: Value(trimmed == null || trimmed.isEmpty ? null : trimmed),
+        saleId: Value(saleId),
       ),
     );
   }

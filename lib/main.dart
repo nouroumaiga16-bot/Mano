@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'data/database.dart';
-import 'stock/stock_screen.dart';
+import 'home_screen.dart';
 
 void main() {
   runApp(ManoApp(database: AppDatabase()));
@@ -27,7 +27,7 @@ class ManoApp extends StatelessWidget {
           border: OutlineInputBorder(),
         ),
       ),
-      home: StockScreen(database: database),
+      home: HomeScreen(database: database),
     );
   }
 }

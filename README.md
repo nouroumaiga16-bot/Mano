@@ -9,7 +9,7 @@ Montants en FCFA.
 ## Avancement
 
 - [x] Étape 1 : module Stock (produits, prix, quantités, alerte stock bas, historique)
-- [ ] Étape 2 : ventes et factures PDF (partage WhatsApp)
+- [x] Étape 2 : ventes et factures PDF (partage WhatsApp), remises, 4 modes de paiement
 - [ ] Étape 3 : fichier clients et ventes à crédit
 - [ ] Étape 4 : tableau de bord du jour
 - [ ] Plus tard : synchronisation en ligne (Supabase)
@@ -18,9 +18,13 @@ Montants en FCFA.
 
 | Dossier | Contenu |
 |---|---|
-| `lib/data/database.dart` | Base de données SQLite (tables et opérations) |
+| `lib/data/database.dart` | Base de données SQLite (tables et opérations du stock) |
+| `lib/data/sales_queries.dart` | Opérations des ventes et réglages |
 | `lib/stock/` | Écrans du module Stock |
+| `lib/sales/` | Ventes, panier, facture et PDF |
+| `lib/settings/` | Informations de la boutique |
 | `lib/utils/format.dart` | Affichage des montants FCFA et des dates |
+| `assets/fonts/` | Police Roboto pour les factures PDF (licence Apache 2.0) |
 | `test/` | Tests automatiques |
 | `web/` | Version web (test sur iPhone) : moteur SQLite, service worker hors ligne |
 | `tool/build_web.sh` | Fabrique la version web |

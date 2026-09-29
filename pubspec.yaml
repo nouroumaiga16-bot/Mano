@@ -40,6 +40,8 @@ dependencies:
   uuid: ^4.6.0
   flutter_localizations:
     sdk: flutter
+  pdf: ^3.13.1
+  share_plus: ^13.3.0
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -63,6 +65,12 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+
+  # Police Roboto (licence Apache 2.0), intégrée aux factures PDF.
+  assets:
+    - assets/fonts/Roboto-Regular.ttf
+    - assets/fonts/Roboto-Bold.ttf
+    - assets/fonts/Roboto-Italic.ttf
 
   # To add assets to your application, add an assets section, like this:
   # assets:

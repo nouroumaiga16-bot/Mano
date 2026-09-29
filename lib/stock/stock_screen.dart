@@ -59,6 +59,7 @@ class _StockScreenState extends State<StockScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Mon stock')),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: null,
         onPressed: _addProduct,
         icon: const Icon(Icons.add),
         label: const Text('Ajouter un produit'),

@@ -234,6 +234,7 @@ class _MovementHistory extends StatelessWidget {
     MovementReason.restock => 'Stock ajouté',
     MovementReason.correction => 'Correction',
     MovementReason.sale => 'Vente',
+    MovementReason.saleCancelled => 'Vente annulée',
   };
 
   @override

@@ -49,3 +49,26 @@ class ThousandsInputFormatter extends TextInputFormatter {
     );
   }
 }
+
+/// 28/09/2026
+String formatDate(DateTime date) {
+  final d = date.toLocal();
+  return '${_two(d.day)}/${_two(d.month)}/${d.year}';
+}
+
+/// 14:05
+String formatTime(DateTime date) {
+  final d = date.toLocal();
+  return '${_two(d.hour)}:${_two(d.minute)}';
+}
+
+/// « Aujourd'hui », « Hier » ou la date.
+String formatDay(DateTime date, {DateTime? now}) {
+  final d = date.toLocal();
+  final today = now ?? DateTime.now();
+  final day = DateTime(d.year, d.month, d.day);
+  final diff = DateTime(today.year, today.month, today.day).difference(day);
+  if (diff.inDays == 0) return 'Aujourd\'hui';
+  if (diff.inDays == 1) return 'Hier';
+  return formatDate(d);
+}
