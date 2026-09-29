@@ -25,6 +25,8 @@ Montants en FCFA.
 | `lib/sales/` | Ventes, panier, facture et PDF |
 | `lib/settings/` | Informations de la boutique |
 | `lib/customers/` | Fichier clients, dettes et remboursements |
+| `lib/home/` | Écran d'accueil |
+| `lib/theme.dart` | Couleurs et style de l'app (vert forêt, citron) |
 | `lib/dashboard/` | Bilan et graphique |
 | `lib/data/report_queries.dart` | Calculs du bilan |
 | `lib/data/customers_queries.dart` | Opérations des clients et paiements |

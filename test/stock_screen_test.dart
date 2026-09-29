@@ -14,6 +14,9 @@ void main() {
     await tester.pumpWidget(ManoApp(database: db));
     await tester.pumpAndSettle();
 
+    // L'app s'ouvre sur l'Accueil ; on va dans l'onglet Stock.
+    await tester.tap(find.text('Stock').last);
+    await tester.pumpAndSettle();
     expect(find.textContaining('Aucun produit'), findsOneWidget);
 
     await tester.tap(find.text('Ajouter un produit'));

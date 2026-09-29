@@ -27,8 +27,7 @@ void main() {
 
     await tester.pumpWidget(ManoApp(database: db));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Ventes'));
-    await tester.pumpAndSettle();
+    // Accueil : aucune vente, puis le bouton « Nouvelle vente ».
     expect(find.textContaining('Aucune vente'), findsOneWidget);
 
     await tester.tap(find.text('Nouvelle vente'));
@@ -93,7 +92,9 @@ void main() {
 
     await tester.tap(find.byTooltip('Retour'));
     await tester.pumpAndSettle();
-    expect(find.text('Facture N° 0001 · Awa'), findsOneWidget);
+    // Retour à l'Accueil : la vente est dans « Dernières ventes ».
+    expect(find.text('Awa'), findsOneWidget);
+    expect(find.textContaining('Crédit · reste 8'), findsOneWidget);
 
     // Onglet Clients : Awa doit 8 000, on enregistre un paiement de 3 000.
     await tester.tap(find.text('Clients'));
