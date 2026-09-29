@@ -4,6 +4,7 @@ import '../data/database.dart';
 import '../utils/format.dart';
 import 'product_detail_screen.dart';
 import 'product_form_screen.dart';
+import '../widgets/product_thumbnail.dart';
 import 'quantity_badge.dart';
 
 /// Écran principal du module Stock : la liste des produits.
@@ -19,7 +20,11 @@ class StockScreen extends StatefulWidget {
 class _StockScreenState extends State<StockScreen> {
   String _search = '';
   bool _lowOnly = false;
+  String? _category;
   late Stream<List<Product>> _products;
+  late final Stream<List<String>> _categories = widget.database.watchDistinct(
+    widget.database.products.category,
+  );
   late final Stream<StockSummary> _summary = widget.database.watchSummary();
 
   @override
@@ -32,6 +37,7 @@ class _StockScreenState extends State<StockScreen> {
     _products = widget.database.watchProducts(
       search: _search,
       lowOnly: _lowOnly,
+      category: _category,
     );
   }
 
@@ -94,29 +100,52 @@ class _StockScreenState extends State<StockScreen> {
               }),
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Row(
-              children: [
-                ChoiceChip(
-                  label: const Text('Tous'),
-                  selected: !_lowOnly,
-                  onSelected: (_) => setState(() {
-                    _lowOnly = false;
-                    _refreshQuery();
-                  }),
-                ),
-                const SizedBox(width: 8),
-                ChoiceChip(
-                  label: const Text('Stock bas'),
-                  avatar: const Icon(Icons.warning_amber_rounded, size: 18),
-                  selected: _lowOnly,
-                  onSelected: (_) => setState(() {
-                    _lowOnly = true;
-                    _refreshQuery();
-                  }),
-                ),
-              ],
+          SizedBox(
+            height: 56,
+            child: StreamBuilder<List<String>>(
+              stream: _categories,
+              builder: (context, snapshot) {
+                final categories = snapshot.data ?? const [];
+                return ListView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  children: [
+                    ChoiceChip(
+                      label: const Text('Tous'),
+                      selected: !_lowOnly && _category == null,
+                      onSelected: (_) => setState(() {
+                        _lowOnly = false;
+                        _category = null;
+                        _refreshQuery();
+                      }),
+                    ),
+                    const SizedBox(width: 8),
+                    FilterChip(
+                      label: const Text('Stock bas'),
+                      avatar: const Icon(Icons.warning_amber_rounded, size: 18),
+                      selected: _lowOnly,
+                      onSelected: (selected) => setState(() {
+                        _lowOnly = selected;
+                        _refreshQuery();
+                      }),
+                    ),
+                    for (final category in categories) ...[
+                      const SizedBox(width: 8),
+                      ChoiceChip(
+                        label: Text(category),
+                        selected: _category == category,
+                        onSelected: (selected) => setState(() {
+                          _category = selected ? category : null;
+                          _refreshQuery();
+                        }),
+                      ),
+                    ],
+                  ],
+                );
+              },
             ),
           ),
           Expanded(
@@ -129,7 +158,8 @@ class _StockScreenState extends State<StockScreen> {
                 }
                 if (products.isEmpty) {
                   return _EmptyMessage(
-                    filtered: _search.isNotEmpty || _lowOnly,
+                    filtered:
+                        _search.isNotEmpty || _lowOnly || _category != null,
                   );
                 }
                 return ListView.separated(
@@ -139,8 +169,12 @@ class _StockScreenState extends State<StockScreen> {
                   itemBuilder: (context, index) {
                     final product = products[index];
                     return ListTile(
+                      leading: ProductThumbnail(
+                        database: widget.database,
+                        product: product,
+                      ),
                       title: Text(
-                        product.name,
+                        product.displayName,
                         style: const TextStyle(fontWeight: FontWeight.w600),
                       ),
                       subtitle: Text('Prix : ${formatFcfa(product.salePrice)}'),

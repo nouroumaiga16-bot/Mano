@@ -269,7 +269,7 @@ class _InvoicePreview extends StatelessWidget {
             Text(formatDateTime(sale.createdAt)),
             if (sale.customerName != null || sale.customerPhone != null)
               Text(
-                'Client : ${[?sale.customerName, ?sale.customerPhone].join(' · ')}',
+                'Client : ${[?sale.customerName, if (sale.customerPhone case final phone?) formatPhone(phone)].join(' · ')}',
               ),
             const Divider(height: 24),
             for (final item in data.items)

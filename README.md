@@ -10,6 +10,7 @@ Montants en FCFA.
 
 - [x] Étape 1 : module Stock (produits, prix, quantités, alerte stock bas, historique)
 - [x] Étape 2 : ventes et factures PDF (partage WhatsApp), remises, 4 modes de paiement
+- [x] Produits : couleur, taille, catégorie, photo ; téléphones affichés par paires
 - [ ] Étape 3 : fichier clients et ventes à crédit
 - [ ] Étape 4 : tableau de bord du jour
 - [ ] Plus tard : synchronisation en ligne (Supabase)

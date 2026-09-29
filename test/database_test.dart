@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mano/data/database.dart';
@@ -68,5 +70,58 @@ void main() {
     await db.deleteProduct(id);
     expect(await db.watchProducts().first, isEmpty);
     expect((await db.watchSummary().first).productCount, 0);
+  });
+
+  test(
+    'couleur, taille, catégorie : recherche, filtre et nom affiché',
+    () async {
+      await db.addProduct(
+        name: 'Sac Louis Vuitton',
+        purchasePrice: 2500,
+        salePrice: 7000,
+        quantity: 5,
+        lowStockThreshold: 2,
+        color: ' Noir ',
+        category: 'Sacs',
+      );
+      await db.addProduct(
+        name: 'Basket',
+        purchasePrice: 5000,
+        salePrice: 9000,
+        quantity: 5,
+        lowStockThreshold: 2,
+        color: 'Blanc',
+        size: '42',
+        category: 'Chaussures',
+      );
+
+      final all = await db.watchProducts().first;
+      expect(all.map((p) => p.displayName), [
+        'Basket · Blanc · Taille 42',
+        'Sac Louis Vuitton · Noir',
+      ]);
+      expect(
+        (await db.watchProducts(search: 'noir').first).single.name,
+        'Sac Louis Vuitton',
+      );
+      expect(
+        (await db.watchProducts(category: 'Chaussures').first).single.name,
+        'Basket',
+      );
+      expect(await db.watchDistinct(db.products.category).first, [
+        'Chaussures',
+        'Sacs',
+      ]);
+    },
+  );
+
+  test('photo du produit : ajout, remplacement, suppression', () async {
+    final id = await addSoap();
+    expect(await db.watchPhoto(id).first, isNull);
+    await db.setPhoto(id, Uint8List.fromList([1, 2, 3]));
+    await db.setPhoto(id, Uint8List.fromList([4, 5]));
+    expect(await db.watchPhoto(id).first, [4, 5]);
+    await db.setPhoto(id, null);
+    expect(await db.watchPhoto(id).first, isNull);
   });
 }

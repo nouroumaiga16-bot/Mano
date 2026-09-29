@@ -72,3 +72,20 @@ String formatDay(DateTime date, {DateTime? now}) {
   if (diff.inDays == 1) return 'Hier';
   return formatDate(d);
 }
+
+/// Numéro par paires : « 60401903 » -> « 60 40 19 03 »,
+/// « 0022660401903 » -> « +226 60 40 19 03 ». Autre format : laissé tel quel.
+String formatPhone(String phone) {
+  var digits = phone.replaceAll(RegExp(r'\D'), '');
+  var prefix = '';
+  if (digits.length == 13 && digits.startsWith('00226')) {
+    digits = digits.substring(5);
+    prefix = '+226 ';
+  } else if (digits.length == 11 && digits.startsWith('226')) {
+    digits = digits.substring(3);
+    prefix = '+226 ';
+  }
+  if (digits.length != 8) return phone.trim();
+  final pairs = [for (var i = 0; i < 8; i += 2) digits.substring(i, i + 2)];
+  return '$prefix${pairs.join(' ')}';
+}

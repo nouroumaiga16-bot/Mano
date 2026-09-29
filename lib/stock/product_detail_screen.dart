@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../data/database.dart';
@@ -123,6 +124,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           body: ListView(
             padding: const EdgeInsets.all(16),
             children: [
+              _PhotoHeader(database: database, productId: product.id),
               _InfoCard(product: product),
               const SizedBox(height: 16),
               FilledButton.icon(
@@ -146,6 +148,42 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               Text('Historique', style: Theme.of(context).textTheme.titleLarge),
               _MovementHistory(movements: _movements),
             ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// Grande photo en haut de la fiche (rien s'il n'y a pas de photo).
+class _PhotoHeader extends StatefulWidget {
+  const _PhotoHeader({required this.database, required this.productId});
+
+  final AppDatabase database;
+  final String productId;
+
+  @override
+  State<_PhotoHeader> createState() => _PhotoHeaderState();
+}
+
+class _PhotoHeaderState extends State<_PhotoHeader> {
+  late final _photo = widget.database.watchPhoto(widget.productId);
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<Uint8List?>(
+      stream: _photo,
+      builder: (context, snapshot) {
+        final bytes = snapshot.data;
+        if (bytes == null) return const SizedBox.shrink();
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 16),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: AspectRatio(
+              aspectRatio: 4 / 3,
+              child: Image.memory(bytes, fit: BoxFit.cover),
+            ),
           ),
         );
       },
@@ -178,6 +216,10 @@ class _InfoCard extends StatelessWidget {
               ],
             ),
             const Divider(height: 24),
+            if (product.category case final category?)
+              _InfoRow('Catégorie', category),
+            if (product.color case final color?) _InfoRow('Couleur', color),
+            if (product.size case final size?) _InfoRow('Taille', size),
             _InfoRow('Prix de vente', formatFcfa(product.salePrice)),
             _InfoRow('Prix d\'achat', formatFcfa(product.purchasePrice)),
             _InfoRow(

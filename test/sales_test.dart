@@ -154,5 +154,9 @@ PRAGMA user_version = 1;
     );
     expect((await old.watchProduct('p1').first)!.quantity, 24);
     expect((await old.watchMovements('p1').first).length, 2);
+    // Colonnes ajoutées en version 3 : vides pour les anciens produits.
+    final migrated = (await old.watchProduct('p1').first)!;
+    expect(migrated.color, isNull);
+    expect(migrated.displayName, 'Sacs Louis Vuitton');
   });
 }

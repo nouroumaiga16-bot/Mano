@@ -22,4 +22,12 @@ void main() {
     );
     expect(result.text, '125 000');
   });
+
+  test('formatPhone affiche les numéros par paires', () {
+    expect(formatPhone('60401903'), '60 40 19 03');
+    expect(formatPhone('60 40 19 03'), '60 40 19 03');
+    expect(formatPhone('+226 60401903'), '+226 60 40 19 03');
+    expect(formatPhone('0022676363832'), '+226 76 36 38 32');
+    expect(formatPhone('123'), '123');
+  });
 }

@@ -24,6 +24,12 @@ class Products extends Table {
   IntColumn get salePrice => integer()();
   IntColumn get quantity => integer().withDefault(const Constant(0))();
 
+  /// Caractéristiques facultatives. Une couleur = un produit à part, avec
+  /// son propre stock (ex. « Sac · Noir » et « Sac · Marron »).
+  TextColumn get color => text().nullable()();
+  TextColumn get size => text().nullable()();
+  TextColumn get category => text().nullable()();
+
   /// Alerte quand la quantité descend à ce niveau ou en dessous.
   IntColumn get lowStockThreshold => integer().withDefault(const Constant(5))();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
@@ -32,6 +38,17 @@ class Products extends Table {
 
   @override
   Set<Column> get primaryKey => {id};
+}
+
+/// Photo d'un produit (JPEG réduit), à part pour ne pas alourdir les listes.
+@DataClassName('ProductPhoto')
+class ProductPhotos extends Table {
+  TextColumn get productId => text().references(Products, #id)();
+  BlobColumn get bytes => blob()();
+  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+
+  @override
+  Set<Column> get primaryKey => {productId};
 }
 
 enum MovementReason { initial, restock, correction, sale, saleCancelled }
@@ -115,6 +132,10 @@ class Settings extends Table {
 }
 
 extension ProductStock on Product {
+  /// « Sac Louis Vuitton · Noir · Taille 42 »
+  String get displayName =>
+      [name, ?color, if (size != null) 'Taille $size'].join(' · ');
+
   bool get isOutOfStock => quantity <= 0;
   bool get isLowStock => quantity <= lowStockThreshold;
   int get unitProfit => salePrice - purchasePrice;
@@ -134,12 +155,14 @@ class StockSummary {
   final int stockValue;
 }
 
-@DriftDatabase(tables: [Products, StockMovements, Sales, SaleItems, Settings])
+@DriftDatabase(
+  tables: [Products, ProductPhotos, StockMovements, Sales, SaleItems, Settings],
+)
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -149,6 +172,12 @@ class AppDatabase extends _$AppDatabase {
         await m.createTable(saleItems);
         await m.createTable(settings);
         await m.addColumn(stockMovements, stockMovements.saleId);
+      }
+      if (from < 3) {
+        await m.addColumn(products, products.color);
+        await m.addColumn(products, products.size);
+        await m.addColumn(products, products.category);
+        await m.createTable(productPhotos);
       }
     },
     beforeOpen: (details) async {
@@ -185,17 +214,60 @@ class AppDatabase extends _$AppDatabase {
   Stream<List<Product>> watchProducts({
     String search = '',
     bool lowOnly = false,
+    String? category,
   }) {
     final query = select(products)..where((p) => p.deleted.equals(false));
     final term = search.trim().toLowerCase();
     if (term.isNotEmpty) {
-      query.where((p) => p.name.lower().like('%$term%'));
+      final pattern = '%$term%';
+      query.where(
+        (p) =>
+            p.name.lower().like(pattern) |
+            p.color.lower().like(pattern) |
+            p.size.lower().like(pattern) |
+            p.category.lower().like(pattern),
+      );
     }
     if (lowOnly) {
       query.where((_) => _isLow());
     }
+    if (category != null) {
+      query.where((p) => p.category.equals(category));
+    }
     query.orderBy([(p) => OrderingTerm(expression: p.name.lower())]);
     return query.watch();
+  }
+
+  /// Valeurs déjà utilisées (catégories, couleurs...), pour les suggestions.
+  Stream<List<String>> watchDistinct(GeneratedColumn<String> column) {
+    final query = selectOnly(products, distinct: true)
+      ..addColumns([column])
+      ..where(products.deleted.equals(false) & column.isNotNull())
+      ..orderBy([OrderingTerm(expression: column.lower())]);
+    return query.map((row) => row.read(column)!).watch();
+  }
+
+  Stream<Uint8List?> watchPhoto(String productId) {
+    return (select(productPhotos)..where((p) => p.productId.equals(productId)))
+        .map((photo) => photo.bytes)
+        .watchSingleOrNull();
+  }
+
+  /// Enregistre la photo du produit, ou la supprime si [bytes] est null.
+  Future<void> setPhoto(String productId, Uint8List? bytes) async {
+    if (bytes == null) {
+      await (delete(
+        productPhotos,
+      )..where((p) => p.productId.equals(productId))).go();
+    } else {
+      await into(productPhotos).insertOnConflictUpdate(
+        ProductPhotosCompanion.insert(
+          productId: productId,
+          bytes: bytes,
+          updatedAt: Value(DateTime.now()),
+        ),
+      );
+    }
   }
 
   Stream<Product?> watchProduct(String id) {
@@ -236,6 +308,9 @@ class AppDatabase extends _$AppDatabase {
     required int salePrice,
     required int quantity,
     required int lowStockThreshold,
+    String? color,
+    String? size,
+    String? category,
   }) {
     return transaction(() async {
       final product = await into(products).insertReturning(
@@ -245,6 +320,9 @@ class AppDatabase extends _$AppDatabase {
           salePrice: salePrice,
           quantity: Value(quantity),
           lowStockThreshold: Value(lowStockThreshold),
+          color: Value(_clean(color)),
+          size: Value(_clean(size)),
+          category: Value(_clean(category)),
         ),
       );
       if (quantity != 0) {
@@ -260,6 +338,9 @@ class AppDatabase extends _$AppDatabase {
     required int purchasePrice,
     required int salePrice,
     required int lowStockThreshold,
+    String? color,
+    String? size,
+    String? category,
   }) async {
     await (update(products)..where((p) => p.id.equals(id))).write(
       ProductsCompanion(
@@ -267,6 +348,9 @@ class AppDatabase extends _$AppDatabase {
         purchasePrice: Value(purchasePrice),
         salePrice: Value(salePrice),
         lowStockThreshold: Value(lowStockThreshold),
+        color: Value(_clean(color)),
+        size: Value(_clean(size)),
+        category: Value(_clean(category)),
         updatedAt: Value(DateTime.now()),
       ),
     );

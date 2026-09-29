@@ -73,7 +73,8 @@ Future<Uint8List> buildInvoicePdf({
             ),
           ),
           if (shop.address.isNotEmpty) pw.Text(shop.address),
-          if (shop.phone.isNotEmpty) pw.Text('Tél. : ${shop.phone}'),
+          if (shop.phone.isNotEmpty)
+            pw.Text('Tél. : ${formatPhone(shop.phone)}'),
           pw.SizedBox(height: 16),
           pw.Row(
             mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
@@ -100,7 +101,7 @@ Future<Uint8List> buildInvoicePdf({
                         style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
                       ),
                     if (sale.customerPhone != null)
-                      pw.Text(sale.customerPhone!),
+                      pw.Text(formatPhone(sale.customerPhone!)),
                   ],
                 ),
             ],

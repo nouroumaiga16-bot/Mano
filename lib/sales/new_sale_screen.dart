@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../data/database.dart';
 import '../utils/format.dart';
+import '../widgets/product_thumbnail.dart';
 import 'payment.dart';
 import 'sale_detail_screen.dart';
 
@@ -173,7 +174,7 @@ class _NewSaleScreenState extends State<NewSaleScreen> {
                 },
               ),
               onEditPrice: () => _editNumber(
-                title: 'Prix pour ${line.product.name}',
+                title: 'Prix pour ${line.product.displayName}',
                 initial: line.unitPrice,
                 suffix: 'FCFA',
                 onSaved: (value) => line.unitPrice = value,
@@ -304,7 +305,7 @@ class _CartLineTile extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    line.product.name,
+                    line.product.displayName,
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -460,7 +461,11 @@ class _ProductPickerState extends State<_ProductPicker> {
                   itemBuilder: (context, index) {
                     final product = products[index];
                     return ListTile(
-                      title: Text(product.name),
+                      leading: ProductThumbnail(
+                        database: widget.database,
+                        product: product,
+                      ),
+                      title: Text(product.displayName),
                       subtitle: Text(
                         '${formatFcfa(product.salePrice)} · '
                         'Stock : ${formatNumber(product.quantity)}',

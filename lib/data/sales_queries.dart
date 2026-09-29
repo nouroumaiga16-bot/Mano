@@ -83,7 +83,7 @@ extension SalesQueries on AppDatabase {
           SaleItemsCompanion.insert(
             saleId: sale.id,
             productId: line.product.id,
-            productName: line.product.name,
+            productName: line.product.displayName,
             quantity: line.quantity,
             unitPrice: line.unitPrice,
             purchasePrice: line.product.purchasePrice,

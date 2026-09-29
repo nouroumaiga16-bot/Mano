@@ -19,16 +19,17 @@ void main() {
     await tester.tap(find.text('Ajouter un produit'));
     await tester.pumpAndSettle();
 
-    Future<void> fill(int index, String text) async {
-      final field = find.byType(TextFormField).at(index);
+    Future<void> fill(String label, String text) async {
+      final field = find.widgetWithText(TextFormField, label);
       await tester.ensureVisible(field);
       await tester.enterText(field, text);
     }
 
-    await fill(0, 'Savon');
-    await fill(1, '200');
-    await fill(2, '250');
-    await fill(3, '3');
+    await fill('Nom du produit', 'Savon');
+    await fill('Couleur (facultatif)', 'Blanc');
+    await fill('Prix d\'achat (par unité)', '200');
+    await fill('Prix de vente (par unité)', '250');
+    await fill('Quantité en stock', '3');
     await tester.pump();
     expect(find.textContaining('Bénéfice'), findsOneWidget);
 
@@ -36,7 +37,7 @@ void main() {
     await tester.tap(find.text('Enregistrer'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Savon'), findsOneWidget);
+    expect(find.text('Savon · Blanc'), findsOneWidget);
     expect(find.text('Stock bas'), findsWidgets);
     expect(find.text('1 produit est presque épuisé'), findsOneWidget);
 
