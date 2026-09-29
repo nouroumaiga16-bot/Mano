@@ -46,18 +46,45 @@ void main() {
       '1000',
     );
     await tester.tap(find.text('Wave'));
+    await tester.pumpAndSettle();
+
+    // Client : création depuis la vente.
+    await tester.ensureVisible(find.text('Choisir un client'));
+    await tester.tap(find.text('Choisir un client'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Nouveau client'));
+    await tester.pumpAndSettle();
     await tester.enterText(
-      find.widgetWithText(TextField, 'Nom du client'),
+      find.widgetWithText(TextFormField, 'Nom du client'),
       'Awa',
     );
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Téléphone (facultatif)'),
+      '76363832',
+    );
+    await tester.tap(find.text('Enregistrer'));
     await tester.pumpAndSettle();
-    expect(find.text('13 000 FCFA'), findsOneWidget);
+    expect(find.text('Awa'), findsOneWidget);
+    expect(find.text('76 36 38 32'), findsOneWidget);
+
+    // Vente à crédit : 5 000 payés sur 13 000.
+    await tester.ensureVisible(find.text('Vente à crédit'));
+    await tester.tap(find.text('Vente à crédit'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Montant payé maintenant'),
+      '5000',
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('13\u202F000\u202FFCFA'), findsOneWidget);
+    expect(find.text('Reste à payer : 8\u202F000\u202FFCFA'), findsOneWidget);
 
     await tester.tap(find.text('Valider la vente'));
     await tester.pumpAndSettle();
 
     expect(find.text('Facture N° 0001'), findsOneWidget);
-    expect(find.textContaining('Client : Awa'), findsOneWidget);
+    expect(find.textContaining('Client : Awa · 76 36 38 32'), findsOneWidget);
+    expect(find.text('Reste à payer'), findsOneWidget);
     expect(find.text('Envoyer la facture (WhatsApp...)'), findsOneWidget);
     final product = await tester.runAsync(
       () => db.watchProduct(productId).first,
@@ -67,6 +94,25 @@ void main() {
     await tester.tap(find.byTooltip('Retour'));
     await tester.pumpAndSettle();
     expect(find.text('Facture N° 0001 · Awa'), findsOneWidget);
+
+    // Onglet Clients : Awa doit 8 000, on enregistre un paiement de 3 000.
+    await tester.tap(find.text('Clients'));
+    await tester.pumpAndSettle();
+    expect(find.text('8\u202F000\u202FFCFA'), findsWidgets);
+    await tester.tap(find.text('Awa'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Enregistrer un paiement'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Montant reçu'),
+      '3000',
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Enregistrer'));
+    await tester.pumpAndSettle();
+    expect(find.text('5\u202F000\u202FFCFA'), findsOneWidget);
+    expect(find.text('Rappeler par WhatsApp'), findsOneWidget);
+    expect(find.text('+3\u202F000\u202FFCFA'), findsOneWidget);
 
     await tester.pumpWidget(const SizedBox());
     await tester.pump(const Duration(seconds: 1));

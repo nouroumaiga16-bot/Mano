@@ -7,6 +7,7 @@ import 'package:uuid/uuid.dart';
 
 part 'database.g.dart';
 part 'sales_queries.dart';
+part 'customers_queries.dart';
 
 const _uuid = Uuid();
 
@@ -76,6 +77,40 @@ class StockMovements extends Table {
 
 enum PaymentMethod { cash, orangeMoney, moovMoney, wave }
 
+/// Un client du fichier clients.
+@DataClassName('Customer')
+class Customers extends Table {
+  TextColumn get id => text().clientDefault(() => _uuid.v4())();
+  TextColumn get name => text().withLength(min: 1, max: 100)();
+  TextColumn get phone => text().nullable()();
+
+  /// Quartier (ex. Larlé, Gounghin).
+  TextColumn get neighborhood => text().nullable()();
+
+  /// Note libre : « paie en fin de mois », « cliente fidèle »...
+  TextColumn get note => text().nullable()();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+  BoolColumn get deleted => boolean().withDefault(const Constant(false))();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// Un remboursement : argent reçu d'un client pour réduire sa dette.
+@DataClassName('Payment')
+class Payments extends Table {
+  TextColumn get id => text().clientDefault(() => _uuid.v4())();
+  TextColumn get customerId => text().references(Customers, #id)();
+  IntColumn get amount => integer()();
+  TextColumn get method => textEnum<PaymentMethod>()();
+  TextColumn get note => text().nullable()();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
 /// Une vente, qui sert aussi de facture.
 @DataClassName('Sale')
 class Sales extends Table {
@@ -83,6 +118,11 @@ class Sales extends Table {
 
   /// Numéro de facture lisible : 1, 2, 3... (affiché « N° 0001 »).
   IntColumn get number => integer()();
+
+  /// Client du fichier clients (obligatoire pour une vente à crédit).
+  TextColumn get customerId => text().nullable().references(Customers, #id)();
+
+  /// Nom et téléphone recopiés au moment de la vente, pour la facture.
   TextColumn get customerName => text().nullable()();
   TextColumn get customerPhone => text().nullable()();
 
@@ -94,7 +134,8 @@ class Sales extends Table {
   IntColumn get total => integer()();
   TextColumn get paymentMethod => textEnum<PaymentMethod>()();
 
-  /// Égal au total pour l'instant ; servira aux ventes à crédit (étape 3).
+  /// Payé au moment de la vente. Moins que le total = vente à crédit ;
+  /// le reste est dû par le client (voir [Payments] pour les remboursements).
   IntColumn get amountPaid => integer()();
 
   /// Une vente annulée remet les articles en stock mais reste visible.
@@ -158,13 +199,22 @@ class StockSummary {
 }
 
 @DriftDatabase(
-  tables: [Products, ProductPhotos, StockMovements, Sales, SaleItems, Settings],
+  tables: [
+    Products,
+    ProductPhotos,
+    StockMovements,
+    Sales,
+    SaleItems,
+    Settings,
+    Customers,
+    Payments,
+  ],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -180,6 +230,13 @@ class AppDatabase extends _$AppDatabase {
         await m.addColumn(products, products.size);
         await m.addColumn(products, products.category);
         await m.createTable(productPhotos);
+      }
+      if (from < 4) {
+        await m.createTable(customers);
+        await m.createTable(payments);
+        // Une base v1 vient de recevoir la table sales complète (étape 2).
+        if (from >= 2) await m.addColumn(sales, sales.customerId);
+        await _createCustomersFromPastSales();
       }
     },
     beforeOpen: (details) async {

@@ -26,8 +26,17 @@ void main() {
       lines: [SaleLineInput(product: product, quantity: 2, unitPrice: 6500)],
       discount: 1000,
       paymentMethod: PaymentMethod.wave,
-      customerName: 'Awa Ouédraogo — l’aînée',
-      customerPhone: '70 12 34 56',
+      customer:
+          (await db
+                  .watchCustomer(
+                    await db.addCustomer(
+                      name: 'Awa Ouédraogo — l’aînée',
+                      phone: '70123456',
+                    ),
+                  )
+                  .first)
+              .customer,
+      amountPaid: 5000,
     );
     final sale = await db.watchSale(saleId).first;
     final items = await db.watchSaleItems(saleId).first;

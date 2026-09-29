@@ -11,7 +11,7 @@ Montants en FCFA.
 - [x] Étape 1 : module Stock (produits, prix, quantités, alerte stock bas, historique)
 - [x] Étape 2 : ventes et factures PDF (partage WhatsApp), remises, 4 modes de paiement
 - [x] Produits : couleur, taille, catégorie, photo ; téléphones affichés par paires
-- [ ] Étape 3 : fichier clients et ventes à crédit
+- [x] Étape 3 : fichier clients (téléphone, quartier, note), ventes à crédit, remboursements, rappel WhatsApp
 - [ ] Étape 4 : tableau de bord du jour
 - [ ] Plus tard : synchronisation en ligne (Supabase)
 
@@ -24,6 +24,8 @@ Montants en FCFA.
 | `lib/stock/` | Écrans du module Stock |
 | `lib/sales/` | Ventes, panier, facture et PDF |
 | `lib/settings/` | Informations de la boutique |
+| `lib/customers/` | Fichier clients, dettes et remboursements |
+| `lib/data/customers_queries.dart` | Opérations des clients et paiements |
 | `lib/utils/format.dart` | Affichage des montants FCFA et des dates |
 | `assets/fonts/` | Police Roboto pour les factures PDF (licence Apache 2.0) |
 | `test/` | Tests automatiques |

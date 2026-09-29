@@ -54,8 +54,8 @@ extension SalesQueries on AppDatabase {
     required List<SaleLineInput> lines,
     required PaymentMethod paymentMethod,
     int discount = 0,
-    String? customerName,
-    String? customerPhone,
+    Customer? customer,
+    int? amountPaid,
   }) {
     if (lines.isEmpty) {
       throw ArgumentError('Une vente doit contenir au moins un article.');
@@ -65,6 +65,13 @@ extension SalesQueries on AppDatabase {
       throw ArgumentError('La remise doit être entre 0 et le total.');
     }
     final total = subtotal - discount;
+    final paid = amountPaid ?? total;
+    if (paid < 0 || paid > total) {
+      throw ArgumentError('Le montant payé doit être entre 0 et le total.');
+    }
+    if (paid < total && customer == null) {
+      throw ArgumentError('Une vente à crédit doit avoir un client.');
+    }
 
     return transaction(() async {
       final maxNumber = sales.number.max();
@@ -76,13 +83,14 @@ extension SalesQueries on AppDatabase {
       final sale = await into(sales).insertReturning(
         SalesCompanion.insert(
           number: number,
-          customerName: Value(_clean(customerName)),
-          customerPhone: Value(_clean(customerPhone)),
+          customerId: Value(customer?.id),
+          customerName: Value(customer?.name),
+          customerPhone: Value(customer?.phone),
           subtotal: subtotal,
           discount: Value(discount),
           total: total,
           paymentMethod: paymentMethod,
-          amountPaid: total,
+          amountPaid: paid,
         ),
       );
 

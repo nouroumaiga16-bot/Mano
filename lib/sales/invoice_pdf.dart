@@ -177,7 +177,15 @@ Future<Uint8List> buildInvoicePdf({
           ],
           pw.Divider(color: PdfColors.grey400),
           totalRow('TOTAL', formatFcfa(sale.total), bold: true),
-          totalRow('Paiement', paymentLabel(sale.paymentMethod)),
+          totalRow('Paiement', salePaymentLabel(sale)),
+          if (sale.amountPaid < sale.total) ...[
+            totalRow('Payé', formatFcfa(sale.amountPaid)),
+            totalRow(
+              'Reste à payer',
+              formatFcfa(sale.total - sale.amountPaid),
+              bold: true,
+            ),
+          ],
           pw.Spacer(),
           pw.Center(
             child: pw.Text(

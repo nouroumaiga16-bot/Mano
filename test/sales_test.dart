@@ -28,6 +28,11 @@ void main() {
     return (await db.watchProduct(id).first)!;
   }
 
+  Future<Customer> addAwa() async {
+    final id = await db.addCustomer(name: '  Awa ', phone: '');
+    return (await db.watchCustomer(id).first).customer;
+  }
+
   test('une vente baisse le stock et numérote les factures', () async {
     final sac = await addProduct('Sac', 2500, 7000, 25);
     final pagne = await addProduct('Pagne', 3000, 5000, 10);
@@ -39,8 +44,7 @@ void main() {
       ],
       discount: 1000,
       paymentMethod: PaymentMethod.orangeMoney,
-      customerName: '  Awa ',
-      customerPhone: '',
+      customer: await addAwa(),
     );
 
     final sale = await db.watchSale(id).first;
@@ -50,6 +54,7 @@ void main() {
     expect(sale.amountPaid, 17000);
     expect(sale.customerName, 'Awa');
     expect(sale.customerPhone, isNull);
+    expect(sale.customerId, isNotNull);
     expect(sale.paymentMethod, PaymentMethod.orangeMoney);
 
     final items = await db.watchSaleItems(id).first;

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../customers/customer_picker.dart';
 import '../data/database.dart';
 import '../utils/format.dart';
 import '../widgets/product_thumbnail.dart';
@@ -31,8 +32,9 @@ class NewSaleScreen extends StatefulWidget {
 class _NewSaleScreenState extends State<NewSaleScreen> {
   final _lines = <_CartLine>[];
   final _discount = TextEditingController();
-  final _customerName = TextEditingController();
-  final _customerPhone = TextEditingController();
+  final _amountPaid = TextEditingController(text: '0');
+  Customer? _customer;
+  bool _credit = false;
   PaymentMethod _payment = PaymentMethod.cash;
   bool _saving = false;
 
@@ -41,10 +43,22 @@ class _NewSaleScreenState extends State<NewSaleScreen> {
   int get _total => _subtotal - _discountValue;
   bool get _discountTooBig => _discountValue > _subtotal;
 
+  /// Payé maintenant : tout, ou l'avance saisie pour une vente à crédit.
+  int get _paidNow => _credit ? parseNumber(_amountPaid.text) ?? 0 : _total;
+  bool get _paidTooMuch => _credit && _paidNow >= _total && _total > 0;
+  bool get _missingCustomer => _credit && _customer == null;
+  bool get _canSave =>
+      _lines.isNotEmpty &&
+      !_discountTooBig &&
+      !_paidTooMuch &&
+      !_missingCustomer &&
+      !_saving;
+
   @override
   void initState() {
     super.initState();
     _discount.addListener(() => setState(() {}));
+    _amountPaid.addListener(() => setState(() {}));
     // On commence directement par choisir un produit.
     WidgetsBinding.instance.addPostFrameCallback((_) => _addProduct());
   }
@@ -52,8 +66,7 @@ class _NewSaleScreenState extends State<NewSaleScreen> {
   @override
   void dispose() {
     _discount.dispose();
-    _customerName.dispose();
-    _customerPhone.dispose();
+    _amountPaid.dispose();
     super.dispose();
   }
 
@@ -112,7 +125,7 @@ class _NewSaleScreenState extends State<NewSaleScreen> {
   }
 
   Future<void> _save() async {
-    if (_lines.isEmpty || _discountTooBig) return;
+    if (!_canSave) return;
     setState(() => _saving = true);
     final saleId = await widget.database.createSale(
       lines: [
@@ -125,8 +138,8 @@ class _NewSaleScreenState extends State<NewSaleScreen> {
       ],
       discount: _discountValue,
       paymentMethod: _payment,
-      customerName: _customerName.text,
-      customerPhone: _customerPhone.text,
+      customer: _customer,
+      amountPaid: _paidNow,
     );
     if (!mounted) return;
     ScaffoldMessenger.of(context)
@@ -202,37 +215,65 @@ class _NewSaleScreenState extends State<NewSaleScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          Text('Paiement', style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              for (final method in PaymentMethod.values)
-                ChoiceChip(
-                  label: Text(paymentLabel(method)),
-                  selected: _payment == method,
-                  onSelected: (_) => setState(() => _payment = method),
-                ),
-            ],
-          ),
-          const SizedBox(height: 16),
           Text(
-            'Client (facultatif)',
+            _credit ? 'Client' : 'Client (facultatif)',
             style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: 8),
-          TextField(
-            controller: _customerName,
-            textCapitalization: TextCapitalization.words,
-            decoration: const InputDecoration(labelText: 'Nom du client'),
+          _CustomerTile(
+            customer: _customer,
+            missing: _missingCustomer,
+            onPick: () async {
+              final customer = await pickCustomer(context, widget.database);
+              if (customer != null) setState(() => _customer = customer);
+            },
+            onClear: () => setState(() => _customer = null),
           ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _customerPhone,
-            keyboardType: TextInputType.phone,
-            decoration: const InputDecoration(labelText: 'Téléphone'),
+          const SizedBox(height: 8),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('Vente à crédit'),
+            subtitle: const Text('Le client paiera le reste plus tard'),
+            value: _credit,
+            onChanged: (value) => setState(() => _credit = value),
           ),
+          if (_credit) ...[
+            TextField(
+              controller: _amountPaid,
+              keyboardType: TextInputType.number,
+              inputFormatters: [ThousandsInputFormatter()],
+              decoration: InputDecoration(
+                labelText: 'Montant payé maintenant',
+                suffixText: 'FCFA',
+                helperText: _paidTooMuch
+                    ? null
+                    : 'Reste à payer : ${formatFcfa(_total - _paidNow)}',
+                errorText: _paidTooMuch
+                    ? 'Tout est payé : désactivez « Vente à crédit »'
+                    : null,
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+          if (!_credit || _paidNow > 0) ...[
+            Text(
+              _credit ? 'Paiement de l\'avance' : 'Paiement',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final method in PaymentMethod.values)
+                  ChoiceChip(
+                    label: Text(paymentLabel(method)),
+                    selected: _payment == method,
+                    onSelected: (_) => setState(() => _payment = method),
+                  ),
+              ],
+            ),
+          ],
         ],
       ),
       bottomNavigationBar: SafeArea(
@@ -241,7 +282,12 @@ class _NewSaleScreenState extends State<NewSaleScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (_discountValue > 0 && !_discountTooBig)
+              if (_credit && !_paidTooMuch && _lines.isNotEmpty)
+                Text(
+                  'Payé ${formatFcfa(_paidNow)} · reste ${formatFcfa(_total - _paidNow)}',
+                  style: TextStyle(color: Colors.red.shade800),
+                )
+              else if (_discountValue > 0 && !_discountTooBig)
                 Text(
                   '${formatFcfa(_subtotal)} − remise ${formatFcfa(_discountValue)}',
                 ),
@@ -258,9 +304,7 @@ class _NewSaleScreenState extends State<NewSaleScreen> {
               ),
               const SizedBox(height: 8),
               FilledButton.icon(
-                onPressed: _lines.isEmpty || _discountTooBig || _saving
-                    ? null
-                    : _save,
+                onPressed: _canSave ? _save : null,
                 icon: const Icon(Icons.check),
                 label: const Text('Valider la vente'),
                 style: FilledButton.styleFrom(
@@ -480,6 +524,61 @@ class _ProductPickerState extends State<_ProductPicker> {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _CustomerTile extends StatelessWidget {
+  const _CustomerTile({
+    required this.customer,
+    required this.missing,
+    required this.onPick,
+    required this.onClear,
+  });
+
+  final Customer? customer;
+  final bool missing;
+  final VoidCallback onPick;
+  final VoidCallback onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    final customer = this.customer;
+    final colors = Theme.of(context).colorScheme;
+    return Card(
+      margin: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: missing ? colors.error : colors.outline),
+      ),
+      child: customer == null
+          ? ListTile(
+              leading: const Icon(Icons.person_search),
+              title: const Text('Choisir un client'),
+              subtitle: missing
+                  ? Text(
+                      'Obligatoire pour une vente à crédit',
+                      style: TextStyle(color: colors.error),
+                    )
+                  : null,
+              trailing: const Icon(Icons.chevron_right),
+              onTap: onPick,
+            )
+          : ListTile(
+              leading: CircleAvatar(
+                child: Text(customer.name.characters.first),
+              ),
+              title: Text(customer.name),
+              subtitle: customer.phone == null
+                  ? null
+                  : Text(formatPhone(customer.phone!)),
+              onTap: onPick,
+              trailing: IconButton(
+                tooltip: 'Retirer le client',
+                icon: const Icon(Icons.close),
+                onPressed: onClear,
+              ),
+            ),
     );
   }
 }

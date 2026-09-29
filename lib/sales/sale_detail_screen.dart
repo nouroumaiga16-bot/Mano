@@ -310,7 +310,15 @@ class _InvoicePreview extends StatelessWidget {
               row('Remise', '− ${formatFcfa(sale.discount)}'),
             ],
             row('Total', formatFcfa(sale.total), bold: true),
-            row('Paiement', paymentLabel(sale.paymentMethod)),
+            row('Paiement', salePaymentLabel(sale)),
+            if (sale.amountPaid < sale.total) ...[
+              row('Payé', formatFcfa(sale.amountPaid)),
+              row(
+                'Reste à payer',
+                formatFcfa(sale.total - sale.amountPaid),
+                bold: true,
+              ),
+            ],
           ],
         ),
       ),

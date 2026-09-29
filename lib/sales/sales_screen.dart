@@ -175,7 +175,11 @@ class _SaleTile extends StatelessWidget {
       subtitle: Text(
         cancelled
             ? 'Annulée'
-            : '${formatTime(sale.createdAt)} · ${paymentLabel(sale.paymentMethod)}',
+            : [
+                formatTime(sale.createdAt),
+                salePaymentLabel(sale),
+                if (sale.unpaid > 0) 'reste ${formatFcfa(sale.unpaid)}',
+              ].join(' · '),
         style: cancelled ? TextStyle(color: Colors.red.shade800) : null,
       ),
       trailing: Text(
