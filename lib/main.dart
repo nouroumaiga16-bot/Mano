@@ -3,6 +3,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'data/database.dart';
 import 'home_screen.dart';
+import 'theme.dart';
 import 'widgets/data_error.dart';
 
 void main() {
@@ -22,12 +23,7 @@ class ManoApp extends StatelessWidget {
       locale: const Locale('fr'),
       supportedLocales: const [Locale('fr')],
       localizationsDelegates: GlobalMaterialLocalizations.delegates,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF1B7F5A)),
-        inputDecorationTheme: const InputDecorationTheme(
-          border: OutlineInputBorder(),
-        ),
-      ),
+      theme: manoTheme(),
       home: _Startup(database: database),
     );
   }
