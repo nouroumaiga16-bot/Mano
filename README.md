@@ -4,6 +4,8 @@ Application de gestion pour les petits commerçants du Burkina Faso :
 stock, ventes et factures, fichier clients. Fonctionne 100 % hors ligne.
 Montants en FCFA.
 
+**Version de test (iPhone, Safari) : https://nouroumaiga16-bot.github.io/Mano/**
+
 ## Avancement
 
 - [x] Étape 1 : module Stock (produits, prix, quantités, alerte stock bas, historique)
