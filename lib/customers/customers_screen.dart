@@ -5,6 +5,7 @@ import '../utils/format.dart';
 import 'customer_detail_screen.dart';
 import 'customer_form_screen.dart';
 import 'customer_picker.dart';
+import '../widgets/data_error.dart';
 
 /// Fichier clients : liste, recherche, total des dettes.
 class CustomersScreen extends StatefulWidget {
@@ -60,6 +61,9 @@ class _CustomersScreenState extends State<CustomersScreen> {
       body: StreamBuilder<List<CustomerWithBalance>>(
         stream: _customers,
         builder: (context, snapshot) {
+          if (snapshot.error case final error?) {
+            return DataError(error: error);
+          }
           final all = snapshot.data;
           if (all == null) {
             return const Center(child: CircularProgressIndicator());

@@ -6,6 +6,7 @@ import 'product_detail_screen.dart';
 import 'product_form_screen.dart';
 import '../widgets/product_thumbnail.dart';
 import 'quantity_badge.dart';
+import '../widgets/data_error.dart';
 
 /// Écran principal du module Stock : la liste des produits.
 class StockScreen extends StatefulWidget {
@@ -152,6 +153,9 @@ class _StockScreenState extends State<StockScreen> {
             child: StreamBuilder<List<Product>>(
               stream: _products,
               builder: (context, snapshot) {
+                if (snapshot.error case final error?) {
+                  return DataError(error: error);
+                }
                 final products = snapshot.data;
                 if (products == null) {
                   return const Center(child: CircularProgressIndicator());

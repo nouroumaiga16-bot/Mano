@@ -5,7 +5,9 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 BASE_HREF="${1:-/mano/}"
 
-flutter build web --release --no-web-resources-cdn --base-href "$BASE_HREF"
+VERSION=$(date +%Y%m%d%H%M%S)
+flutter build web --release --no-web-resources-cdn --base-href "$BASE_HREF" \
+  --dart-define=APP_VERSION="$VERSION"
 
 cd build/web
 # Le service worker fourni par Flutter se désinstalle tout seul : on le retire.
@@ -19,7 +21,6 @@ PRECACHE=$(find . -type f \
   ! -path './canvaskit/chromium/*' ! -path './canvaskit/skwasm*' \
   ! -path './canvaskit/wimp*' ! -path './canvaskit/webparagraph/*' \
   | sed 's|^\./||' | sort | python3 -c 'import json,sys; print(json.dumps(["./"] + sys.stdin.read().split()))')
-VERSION=$(date +%Y%m%d%H%M%S)
 python3 - "$VERSION" "$PRECACHE" <<'PY'
 import sys
 version, precache = sys.argv[1], sys.argv[2]

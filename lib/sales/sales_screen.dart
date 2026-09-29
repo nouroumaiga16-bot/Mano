@@ -6,6 +6,7 @@ import '../utils/format.dart';
 import 'new_sale_screen.dart';
 import 'payment.dart';
 import 'sale_detail_screen.dart';
+import '../widgets/data_error.dart';
 
 /// Liste des ventes (factures), des plus récentes aux plus anciennes.
 class SalesScreen extends StatefulWidget {
@@ -74,6 +75,9 @@ class _SalesScreenState extends State<SalesScreen> {
             child: StreamBuilder<List<Sale>>(
               stream: _sales,
               builder: (context, snapshot) {
+                if (snapshot.error case final error?) {
+                  return DataError(error: error);
+                }
                 final sales = snapshot.data;
                 if (sales == null) {
                   return const Center(child: CircularProgressIndicator());

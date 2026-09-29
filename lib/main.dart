@@ -3,6 +3,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'data/database.dart';
 import 'home_screen.dart';
+import 'widgets/data_error.dart';
 
 void main() {
   runApp(ManoApp(database: AppDatabase()));
@@ -102,7 +103,7 @@ class _StartupError extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             SelectableText(
-              '$error',
+              'Version $appVersion\n$error',
               style: Theme.of(context).textTheme.bodySmall,
             ),
           ],

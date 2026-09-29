@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../data/database.dart';
 import '../utils/format.dart';
 import 'revenue_chart.dart';
+import '../widgets/data_error.dart';
 
 /// Bilan : chiffre d'affaires, bénéfice, ventes et meilleurs produits,
 /// pour un jour, un mois ou une année.
@@ -76,6 +77,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
           StreamBuilder<Report>(
             stream: _report,
             builder: (context, snapshot) {
+              if (snapshot.error case final error?) {
+                return DataError(error: error);
+              }
               final report = snapshot.data;
               if (report == null) {
                 return const Padding(
@@ -206,6 +210,8 @@ class _ReportView extends StatelessWidget {
           'vraiment rentré.',
           style: theme.textTheme.bodySmall,
         ),
+        const SizedBox(height: 8),
+        Text('Version $appVersion', style: theme.textTheme.bodySmall),
       ],
     );
   }

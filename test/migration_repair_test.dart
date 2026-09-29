@@ -35,6 +35,11 @@ void main() {
         sales.where((s) => s.customerId == customers.single.customer.id).length,
         2,
       );
+      final report = await db
+          .watchReport(ReportRange(ReportPeriod.year, sales.first.createdAt))
+          .first;
+      expect(report.salesCount, 3);
+      expect(report.revenue, 21000);
       await db.close();
     }
   });
