@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -126,6 +128,14 @@ void main() {
     expect(info.name, 'Boutique Awa');
     expect(info.phone, '70 00 00 00');
     expect(info.address, '');
+    expect(info.logo, isNull);
+
+    await db.saveShopInfo(
+      ShopInfo(name: 'Boutique Awa', logo: Uint8List.fromList([1, 2, 3])),
+    );
+    expect((await db.watchShopInfo().first).logo, [1, 2, 3]);
+    await db.saveShopInfo(const ShopInfo(name: 'Boutique Awa'));
+    expect((await db.watchShopInfo().first).logo, isNull);
   });
 
   test('mise à jour depuis la version 1 sans perte de produits', () async {

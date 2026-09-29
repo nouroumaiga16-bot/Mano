@@ -258,6 +258,14 @@ class _InvoicePreview extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            if (data.shop.logo case final logo?)
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Image.memory(logo, height: 56, fit: BoxFit.contain),
+                ),
+              ),
             if (data.shop.name.isNotEmpty)
               Text(
                 data.shop.name,

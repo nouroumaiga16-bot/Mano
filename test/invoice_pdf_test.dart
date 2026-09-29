@@ -35,7 +35,13 @@ void main() {
     final bytes = await buildInvoicePdf(
       sale: sale,
       items: items,
-      shop: const ShopInfo(name: 'Boutique Awa', phone: '70 00 00 00'),
+      shop: ShopInfo(
+        name: 'Boutique Awa',
+        phone: '70000000',
+        logo: const String.fromEnvironment('LOGO').isEmpty
+            ? base64Decode(_logoPng)
+            : File(const String.fromEnvironment('LOGO')).readAsBytesSync(),
+      ),
     );
     expect(ascii.decode(bytes.sublist(0, 5)), '%PDF-');
     expect(invoiceFileName(sale), 'Facture-0001.pdf');
@@ -43,3 +49,7 @@ void main() {
     if (out.isNotEmpty) File(out).writeAsBytesSync(bytes);
   });
 }
+
+/// Petite image PNG 1×1 pixel, pour vérifier qu'un logo passe dans le PDF.
+const _logoPng =
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';

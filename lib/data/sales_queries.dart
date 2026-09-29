@@ -16,11 +16,19 @@ class SaleLineInput {
 }
 
 class ShopInfo {
-  const ShopInfo({this.name = '', this.phone = '', this.address = ''});
+  const ShopInfo({
+    this.name = '',
+    this.phone = '',
+    this.address = '',
+    this.logo,
+  });
 
   final String name;
   final String phone;
   final String address;
+
+  /// Logo de la boutique (image réduite), affiché sur les factures.
+  final Uint8List? logo;
 
   bool get isEmpty => name.isEmpty && phone.isEmpty && address.isEmpty;
 }
@@ -169,6 +177,7 @@ extension SalesQueries on AppDatabase {
   static const _shopName = 'shop.name';
   static const _shopPhone = 'shop.phone';
   static const _shopAddress = 'shop.address';
+  static const _shopLogo = 'shop.logo';
 
   Stream<ShopInfo> watchShopInfo() {
     return select(settings).watch().map((rows) {
@@ -177,6 +186,10 @@ extension SalesQueries on AppDatabase {
         name: values[_shopName] ?? '',
         phone: values[_shopPhone] ?? '',
         address: values[_shopAddress] ?? '',
+        logo: switch (values[_shopLogo]) {
+          final encoded? => base64Decode(encoded),
+          null => null,
+        },
       );
     });
   }
@@ -190,6 +203,15 @@ extension SalesQueries on AppDatabase {
       }.entries) {
         await into(settings).insertOnConflictUpdate(
           SettingsCompanion.insert(key: entry.key, value: entry.value.trim()),
+        );
+      }
+      // Le logo est gardé en texte (base64) avec les autres réglages.
+      final logo = info.logo;
+      if (logo == null) {
+        await (delete(settings)..where((s) => s.key.equals(_shopLogo))).go();
+      } else {
+        await into(settings).insertOnConflictUpdate(
+          SettingsCompanion.insert(key: _shopLogo, value: base64Encode(logo)),
         );
       }
     });

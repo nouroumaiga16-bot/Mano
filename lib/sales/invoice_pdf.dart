@@ -64,17 +64,37 @@ Future<Uint8List> buildInvoicePdf({
       build: (context) => pw.Column(
         crossAxisAlignment: pw.CrossAxisAlignment.stretch,
         children: [
-          pw.Text(
-            shop.name.isEmpty ? 'Facture' : shop.name,
-            style: pw.TextStyle(
-              fontSize: 18,
-              fontWeight: pw.FontWeight.bold,
-              color: green,
-            ),
+          pw.Row(
+            crossAxisAlignment: pw.CrossAxisAlignment.center,
+            children: [
+              if (shop.logo case final logo?) ...[
+                pw.SizedBox(
+                  width: 64,
+                  height: 64,
+                  child: pw.Image(pw.MemoryImage(logo), fit: pw.BoxFit.contain),
+                ),
+                pw.SizedBox(width: 12),
+              ],
+              pw.Expanded(
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text(
+                      shop.name.isEmpty ? 'Facture' : shop.name,
+                      style: pw.TextStyle(
+                        fontSize: 18,
+                        fontWeight: pw.FontWeight.bold,
+                        color: green,
+                      ),
+                    ),
+                    if (shop.address.isNotEmpty) pw.Text(shop.address),
+                    if (shop.phone.isNotEmpty)
+                      pw.Text('Tél. : ${formatPhone(shop.phone)}'),
+                  ],
+                ),
+              ),
+            ],
           ),
-          if (shop.address.isNotEmpty) pw.Text(shop.address),
-          if (shop.phone.isNotEmpty)
-            pw.Text('Tél. : ${formatPhone(shop.phone)}'),
           pw.SizedBox(height: 16),
           pw.Row(
             mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
