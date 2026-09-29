@@ -8,6 +8,7 @@ import 'package:uuid/uuid.dart';
 part 'database.g.dart';
 part 'sales_queries.dart';
 part 'customers_queries.dart';
+part 'report_queries.dart';
 
 const _uuid = Uuid();
 

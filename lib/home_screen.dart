@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 
 import 'customers/customers_screen.dart';
+import 'dashboard/dashboard_screen.dart';
 import 'data/database.dart';
 import 'sales/sales_screen.dart';
 import 'stock/stock_screen.dart';
 
-/// Écran d'accueil avec la barre de menu du bas : Stock, Ventes, Clients.
+/// Écran d'accueil avec la barre de menu du bas : Stock, Ventes, Clients, Bilan.
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key, required this.database});
 
@@ -27,6 +28,7 @@ class _HomeScreenState extends State<HomeScreen> {
           StockScreen(database: widget.database),
           SalesScreen(database: widget.database),
           CustomersScreen(database: widget.database),
+          DashboardScreen(database: widget.database),
         ],
       ),
       bottomNavigationBar: NavigationBar(
@@ -47,6 +49,11 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: Icon(Icons.people_outline),
             selectedIcon: Icon(Icons.people),
             label: 'Clients',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.bar_chart_outlined),
+            selectedIcon: Icon(Icons.bar_chart),
+            label: 'Bilan',
           ),
         ],
       ),

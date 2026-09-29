@@ -12,7 +12,7 @@ Montants en FCFA.
 - [x] Étape 2 : ventes et factures PDF (partage WhatsApp), remises, 4 modes de paiement
 - [x] Produits : couleur, taille, catégorie, photo ; téléphones affichés par paires
 - [x] Étape 3 : fichier clients (téléphone, quartier, note), ventes à crédit, remboursements, rappel WhatsApp
-- [ ] Étape 4 : tableau de bord du jour
+- [x] Étape 4 : bilan du jour, du mois et de l'année (chiffre d'affaires, bénéfice, argent reçu, graphique, meilleurs produits)
 - [ ] Plus tard : synchronisation en ligne (Supabase)
 
 ## Organisation du code
@@ -25,6 +25,8 @@ Montants en FCFA.
 | `lib/sales/` | Ventes, panier, facture et PDF |
 | `lib/settings/` | Informations de la boutique |
 | `lib/customers/` | Fichier clients, dettes et remboursements |
+| `lib/dashboard/` | Bilan et graphique |
+| `lib/data/report_queries.dart` | Calculs du bilan |
 | `lib/data/customers_queries.dart` | Opérations des clients et paiements |
 | `lib/utils/format.dart` | Affichage des montants FCFA et des dates |
 | `assets/fonts/` | Police Roboto pour les factures PDF (licence Apache 2.0) |
