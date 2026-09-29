@@ -167,23 +167,31 @@ extension CustomersQueries on AppDatabase {
   }
 
   /// Migration v4 : crée un client pour chaque nom déjà saisi sur une vente,
-  /// et relie ces ventes au nouveau client.
+  /// et relie ces ventes au client. Relancée, elle réutilise les clients
+  /// déjà créés au lieu de les doubler.
   Future<void> _createCustomersFromPastSales() async {
     final rows = await customSelect(
       'SELECT DISTINCT customer_name, customer_phone FROM sales '
-      'WHERE customer_name IS NOT NULL',
+      'WHERE customer_name IS NOT NULL AND customer_id IS NULL',
     ).get();
     for (final row in rows) {
       final name = row.read<String>('customer_name');
       final phone = row.readNullable<String>('customer_phone');
-      final id = _uuid.v4();
-      await customStatement(
-        'INSERT INTO customers (id, name, phone) VALUES (?, ?, ?)',
-        [id, name, phone],
-      );
+      final existing = await customSelect(
+        'SELECT id FROM customers WHERE name = ? AND phone IS ? LIMIT 1',
+        variables: [Variable.withString(name), Variable(phone)],
+      ).getSingleOrNull();
+      final id = existing?.read<String>('id') ?? _uuid.v4();
+      if (existing == null) {
+        await customStatement(
+          'INSERT INTO customers (id, name, phone) VALUES (?, ?, ?)',
+          [id, name, phone],
+        );
+      }
       await customStatement(
         'UPDATE sales SET customer_id = ? '
-        'WHERE customer_name = ? AND customer_phone IS ?',
+        'WHERE customer_name = ? AND customer_phone IS ? '
+        'AND customer_id IS NULL',
         [id, name, phone],
       );
     }

@@ -218,25 +218,39 @@ class AppDatabase extends _$AppDatabase {
   int get schemaVersion => 4;
 
   @override
+  // Chaque étape vérifie ce qui existe déjà : une mise à jour interrompue
+  // (ou enregistrée à moitié sur iPhone) peut être relancée sans erreur.
+  @override
   MigrationStrategy get migration => MigrationStrategy(
     onUpgrade: (m, from, to) async {
+      Future<void> createTable(TableInfo table) async {
+        if (!await _hasTable(table.actualTableName)) {
+          await m.createTable(table);
+        }
+      }
+
+      Future<void> addColumn(TableInfo table, GeneratedColumn column) async {
+        if (!await _hasColumn(table.actualTableName, column.name)) {
+          await m.addColumn(table, column);
+        }
+      }
+
       if (from < 2) {
-        await m.createTable(sales);
-        await m.createTable(saleItems);
-        await m.createTable(settings);
-        await m.addColumn(stockMovements, stockMovements.saleId);
+        await createTable(sales);
+        await createTable(saleItems);
+        await createTable(settings);
+        await addColumn(stockMovements, stockMovements.saleId);
       }
       if (from < 3) {
-        await m.addColumn(products, products.color);
-        await m.addColumn(products, products.size);
-        await m.addColumn(products, products.category);
-        await m.createTable(productPhotos);
+        await addColumn(products, products.color);
+        await addColumn(products, products.size);
+        await addColumn(products, products.category);
+        await createTable(productPhotos);
       }
       if (from < 4) {
-        await m.createTable(customers);
-        await m.createTable(payments);
-        // Une base v1 vient de recevoir la table sales complète (étape 2).
-        if (from >= 2) await m.addColumn(sales, sales.customerId);
+        await createTable(customers);
+        await createTable(payments);
+        await addColumn(sales, sales.customerId);
         await _createCustomersFromPastSales();
       }
     },
@@ -244,6 +258,24 @@ class AppDatabase extends _$AppDatabase {
       await customStatement('PRAGMA foreign_keys = ON');
     },
   );
+
+  Future<bool> _hasTable(String name) async {
+    final rows = await customSelect(
+      "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?",
+      variables: [Variable.withString(name)],
+    ).get();
+    return rows.isNotEmpty;
+  }
+
+  Future<bool> _hasColumn(String table, String column) async {
+    final rows = await customSelect('PRAGMA table_info("$table")').get();
+    return rows.any((row) => row.read<String>('name') == column);
+  }
+
+  /// Attend que la base soit ouverte (mises à jour comprises) et, sur le web,
+  /// enregistre tout de suite le numéro de version : drift ne l'écrit pas
+  /// dans IndexedDB tant qu'aucune autre modification n'a lieu.
+  Future<void> ensureOpen() => customStatement('SELECT 1');
 
   static QueryExecutor _openConnection() {
     return driftDatabase(
